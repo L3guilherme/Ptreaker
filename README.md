@@ -1,2 +1,3 @@
 # Ptreaker
-Screen readr
+Screen reader
+OpenCV X11 Get Screen
