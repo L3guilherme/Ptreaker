@@ -14,19 +14,18 @@
 #include <X11/Xutil.h>
 #include <thread>
 
+#include <mutex>
+
 class ReaderPscreen
 {
 public:
-    cv::Mat s_img;
     ReaderPscreen();
     cv::Mat ImageFromDisplay(std::vector<uint8_t>& Pixels, int& Width, int& Height, int& BitsPerPixel);
     void StopCap();
     void RunContCap();
+    cv::Mat GetScreen();
     void *CapLoop(void);
     static void* CallCap(void *arg){return ((ReaderPscreen*)arg)->CapLoop();}
-
-private:
-    //bool cap;
 };
 
 #endif // READERPSCREEN_H

@@ -1,6 +1,8 @@
 #include "readerpscreen.h"
 
 bool cap;
+cv::Mat s_img;
+std::mutex lock_s_img;
 
 
 ReaderPscreen::ReaderPscreen()
@@ -16,19 +18,26 @@ void ReaderPscreen::StopCap(){
     cap = false;
 }
 
-void *ReaderPscreen::CapLoop(void){
+cv::Mat ReaderPscreen::GetScreen(){
+    lock_s_img.lock();
+    cv::Mat tmp = s_img.clone();
+    lock_s_img.unlock();
+    return tmp;
+}
 
-    cv::namedWindow("Tela", cv::WINDOW_AUTOSIZE);
+void *ReaderPscreen::CapLoop(void){
     int Width = 0;
     int Height = 0;
     int Bpp = 0;
     std::vector<std::uint8_t> Pixels;
     while(cap){
+        lock_s_img.lock();
         cv::Mat img = ImageFromDisplay(Pixels, Width, Height, Bpp);//ImageFromDisplay(Pixels, Width, Height, Bpp);
-        cv::imshow("Tela", img);//resize ??
+        lock_s_img.unlock();
+        s_img = img;
         usleep(128);
-        //cv::waitKey(30);
     }
+    //cv::destroyWindow("Tela");
     std::cout<<"FIM"<<std::endl;
     return nullptr;
 }
