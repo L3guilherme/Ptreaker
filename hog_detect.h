@@ -16,6 +16,7 @@ class HOG_Detect
 public:
     HOG_Detect();
     void Train();
+    void Load_Imgs_Label(std::vector<cv::Mat> imgs,std::vector<int>labels);
 };
 
 #endif // HOG_DETECT_H

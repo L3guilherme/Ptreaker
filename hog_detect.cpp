@@ -1,13 +1,17 @@
 #include "hog_detect.h"
 
+using namespace cv;
+using namespace cv::ml;
+using namespace std;
+
+vector< Mat > gradient_lst;
+
 HOG_Detect::HOG_Detect()
 {
 
 }
 
-using namespace cv;
-using namespace cv::ml;
-using namespace std;
+
 
 void convert_to_ml( const vector< Mat > & train_samples, Mat& trainData )
 {
@@ -120,6 +124,18 @@ void computeHOGs( const Size wsize, const vector< Mat > & img_lst, vector< Mat >
             }
         }
     }
+}
+
+void HOG_Detect::Load_Imgs_Label(std::vector<Mat> imgs, std::vector<int> labels){
+
+
+    cv::Size pos_image_size = imgs[0].size();
+    bool flip_samples = true;
+    clog << "Histogram of Gradients are being calculated for images...";
+    computeHOGs( pos_image_size, imgs, gradient_lst, flip_samples );
+    clog << "...[done]" << endl;
+
+
 }
 
 void HOG_Detect::Train(){
