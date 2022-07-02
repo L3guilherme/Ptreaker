@@ -5,12 +5,111 @@ using namespace cv::ml;
 using namespace std;
 
 vector< Mat > gradient_lst;
+std::vector<int> labels_lst;
+Ptr< SVM > g_svm;
+
 
 HOG_Detect::HOG_Detect()
 {
 
 }
 
+Mat HOGImage(Mat srcImg, HOGDescriptor &hog,
+             int imgScale, float vecScale,
+             bool drawRect)
+{
+    Mat hogImg;
+    resize(srcImg, hogImg, Size(srcImg.cols * imgScale, srcImg.rows * imgScale));
+
+    if (srcImg.channels() == 1) {
+        cvtColor(hogImg, hogImg, COLOR_GRAY2BGR);
+    } else {
+        cvtColor(srcImg, srcImg, COLOR_BGR2GRAY);
+    }
+
+
+    // compute HOG
+    vector<float> descriptors;
+    hog.compute(srcImg, descriptors);
+
+    /* Ref: Fast Calculation of Histogram of Oriented Gradient Feature
+     *      by Removing Redundancy in Overlapping Block
+     */
+    // count in the window
+    int numCellsX = hog.winSize.width / hog.cellSize.width;
+    int numCellsY = hog.winSize.height / hog.cellSize.height;
+    int numBlocksX = (hog.winSize.width - hog.blockSize.width
+                      + hog.blockStride.width) / hog.blockStride.width;
+    int numBlocksY = (hog.winSize.height - hog.blockSize.height
+                      + hog.blockStride.height) / hog.blockStride.height;
+
+    // count in the block
+    int numCellsInBlockX = hog.blockSize.width / hog.cellSize.width;
+    int numCellsInBlockY = hog.blockSize.height / hog.cellSize.height;
+
+    int sizeGrads[] = {numCellsY, numCellsX, hog.nbins};
+    Mat gradStrengths(3, sizeGrads, CV_32F, Scalar(0));
+    Mat cellUpdateCounter(numCellsY, numCellsX, CV_32S, Scalar(0));
+
+    float *desPtr = &descriptors[0];
+    for (int bx = 0; bx < numBlocksX; bx++) {
+        for (int by = 0; by < numBlocksY; by++) {
+            for (int cx = 0; cx < numCellsInBlockX; cx++) {
+                for (int cy = 0; cy < numCellsInBlockY; cy++) {
+                    int cellX = bx + cx;
+                    int cellY = by + cy;
+                    int *cntPtr = &cellUpdateCounter.at<int>(cellY, cellX);
+                    float *gradPtr = &gradStrengths.at<float>(cellY, cellX, 0);
+                    (*cntPtr)++;
+                    for (int bin = 0; bin < hog.nbins; bin++) {
+                        float *ptr = gradPtr + bin;
+                        *ptr = (*ptr * (*cntPtr - 1) + *(desPtr++)) / (*cntPtr);
+                    }
+                }
+            }
+        }
+    }
+
+    const float PI = 3.1415927;
+    const float radRangePerBin = PI / hog.nbins;
+    const float maxVecLen = min(hog.cellSize.width,
+                                hog.cellSize.height) / 2  * vecScale;
+
+    for (int cellX = 0; cellX < numCellsX; cellX++) {
+        for (int cellY = 0; cellY < numCellsY; cellY++) {
+            Point2f ptTopLeft = Point2f(cellX * hog.cellSize.width,
+                                        cellY * hog.cellSize.height);
+            Point2f ptCenter = ptTopLeft + Point2f(hog.cellSize) / 2;
+            Point2f ptBottomRight = ptTopLeft + Point2f(hog.cellSize);
+
+            if (drawRect) {
+                rectangle(hogImg,
+                          ptTopLeft * imgScale,
+                          ptBottomRight * imgScale,
+                          CV_RGB(100, 100, 100),
+                          1);
+            }
+
+            for (int bin = 0; bin < hog.nbins; bin++) {
+                float gradStrength = gradStrengths.at<float>(cellY, cellX, bin);
+                // no line to draw?
+                if (gradStrength == 0)
+                    continue;
+
+                // draw the perpendicular line of the gradient
+                float angle = bin * radRangePerBin + radRangePerBin / 2;
+                float scale = gradStrength * maxVecLen;
+                Point2f direction = Point2f(sin(angle), -cos(angle));
+                line(hogImg,
+                     (ptCenter - direction * scale) * imgScale,
+                     (ptCenter + direction * scale) * imgScale,
+                     CV_RGB(50, 50, 255),
+                     1);
+            }
+        }
+    }
+    return hogImg;
+}
 
 
 void convert_to_ml( const vector< Mat > & train_samples, Mat& trainData )
@@ -109,17 +208,21 @@ void computeHOGs( const Size wsize, const vector< Mat > & img_lst, vector< Mat >
     {
         if ( img_lst[i].cols >= wsize.width && img_lst[i].rows >= wsize.height )
         {
+
             Rect r = Rect(( img_lst[i].cols - wsize.width ) / 2,
                           ( img_lst[i].rows - wsize.height ) / 2,
                           wsize.width,
                           wsize.height);
-            cvtColor( img_lst[i](r), gray, COLOR_BGR2GRAY );
-            //hog.compute( gray, descriptors, Size( 8, 8 ), Size( 0, 0 ) );
+            //cvtColor( img_lst[i](r), gray, COLOR_BGR2GRAY );
+            gray = img_lst[i](r);
+
+            hog.compute( gray, descriptors);
             gradient_lst.push_back( Mat( descriptors ).clone() );
+
             if ( use_flip )
             {
                 flip( gray, gray, 1 );
-                //hog.compute( gray, descriptors, Size( 8, 8 ), Size( 0, 0 ) );
+                hog.compute( gray, descriptors, Size( 8, 8 ), Size( 0, 0 ) );
                 gradient_lst.push_back( Mat( descriptors ).clone() );
             }
         }
@@ -130,17 +233,15 @@ void HOG_Detect::Load_Imgs_Label(std::vector<Mat> imgs, std::vector<int> labels)
 
 
     cv::Size pos_image_size = imgs[0].size();
-    bool flip_samples = true;
+    bool flip_samples = false;
     clog << "Histogram of Gradients are being calculated for images...";
     computeHOGs( pos_image_size, imgs, gradient_lst, flip_samples );
     clog << "...[done]" << endl;
-
+    labels_lst = labels;
 
 }
 
 void HOG_Detect::Train(){
-    vector< Mat > pos_lst, full_neg_lst, neg_lst, gradient_lst;
-    vector< int > labels;
 
     Mat train_data;
     convert_to_ml( gradient_lst, train_data );
@@ -158,6 +259,32 @@ void HOG_Detect::Train(){
     svm->setP( 0.1 ); // for EPSILON_SVR, epsilon in loss function?
     svm->setC( 0.01 ); // From paper, soft classifier
     svm->setType( SVM::EPS_SVR ); // C_SVC; // EPSILON_SVR; // may be also NU_SVR; // do regression task
-    svm->train( train_data, ROW_SAMPLE, labels );
+    svm->train( train_data, ROW_SAMPLE, labels_lst );
+    g_svm = svm;
     clog << "...[done]" << endl;
+}
+
+int HOG_Detect::Exec(Mat img_in){
+
+    HOGDescriptor hog;
+
+    hog.setSVMDetector( get_svm_detector( g_svm ) );
+    //hog.winSize = img_in.size();
+
+    //imshow("HOG", HOGImage(img_in, hog,1, 1.0, true));
+
+//    vector< Rect > detections;
+//    vector< double > foundWeights;
+
+//    hog.detectMultiScale( img_in, detections, foundWeights );
+
+//    for ( size_t j = 0; j < detections.size(); j++ )
+//    {
+//        Scalar color = Scalar( 0, foundWeights[j] * foundWeights[j] * 200, 0 );
+//        rectangle( img_in, detections[j], color, img_in.cols / 400 + 1 );
+//    }
+
+    cv::imshow("teste",img_in);
+
+    return 0;
 }
