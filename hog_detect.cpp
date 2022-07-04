@@ -7,6 +7,7 @@ using namespace std;
 vector< Mat > gradient_lst;
 std::vector<int> labels_lst;
 Ptr< SVM > g_svm;
+Ptr<KNearest> g_knn;
 
 
 HOG_Detect::HOG_Detect()
@@ -216,7 +217,7 @@ void computeHOGs( const Size wsize, const vector< Mat > & img_lst, vector< Mat >
             //cvtColor( img_lst[i](r), gray, COLOR_BGR2GRAY );
             gray = img_lst[i](r);
 
-            hog.compute( gray, descriptors);
+            hog.compute( gray, descriptors,Size( 8, 8 ), Size( 0, 0 ));
             gradient_lst.push_back( Mat( descriptors ).clone() );
 
             if ( use_flip )
@@ -254,7 +255,7 @@ void HOG_Detect::Train(){
     svm->setDegree( 3 );
     svm->setTermCriteria( TermCriteria(TermCriteria::MAX_ITER + TermCriteria::EPS, 1000, 1e-3 ) );
     svm->setGamma( 0 );
-    svm->setKernel( SVM::LINEAR );
+    svm->setKernel( SVM::LINEAR );//SVM::LINEAR
     svm->setNu( 0.5 );
     svm->setP( 0.1 ); // for EPSILON_SVR, epsilon in loss function?
     svm->setC( 0.01 ); // From paper, soft classifier
@@ -262,29 +263,36 @@ void HOG_Detect::Train(){
     svm->train( train_data, ROW_SAMPLE, labels_lst );
     g_svm = svm;
     clog << "...[done]" << endl;
+
+    Ptr<KNearest> knn = KNearest::create();
+    knn->setDefaultK(2);
+    knn->setIsClassifier(true);
+    knn->train(train_data, ROW_SAMPLE, labels_lst);
+
+    g_knn = knn;
+
 }
 
 int HOG_Detect::Exec(Mat img_in){
 
+    std::cout<<"TESTE"<<std::endl;
+
     HOGDescriptor hog;
+    hog.winSize = img_in.size();
 
-    hog.setSVMDetector( get_svm_detector( g_svm ) );
-    //hog.winSize = img_in.size();
+    vector< float > descriptors;
 
-    //imshow("HOG", HOGImage(img_in, hog,1, 1.0, true));
+    hog.compute( img_in, descriptors, Size( 8, 8 ), Size( 0, 0 ) );
 
-//    vector< Rect > detections;
-//    vector< double > foundWeights;
+    std::cout<<"SVM"<<std::endl;
 
-//    hog.detectMultiScale( img_in, detections, foundWeights );
+    std::cout<<g_svm->predict(descriptors)<<std::endl;
 
-//    for ( size_t j = 0; j < detections.size(); j++ )
-//    {
-//        Scalar color = Scalar( 0, foundWeights[j] * foundWeights[j] * 200, 0 );
-//        rectangle( img_in, detections[j], color, img_in.cols / 400 + 1 );
-//    }
+    std::cout<<"KNN"<<std::endl;
 
-    cv::imshow("teste",img_in);
+    cv::Mat resKnn;
+    g_knn->findNearest(descriptors,2,resKnn);
+    std::cout<<resKnn<<std::endl;
 
     return 0;
 }
