@@ -3,6 +3,8 @@
 bool cap;
 cv::Mat s_img;
 std::mutex lock_s_img;
+std::vector<cv::Rect>s_cortes;
+std::vector<cv::Mat>res_img;
 
 
 ReaderPscreen::ReaderPscreen()
@@ -11,6 +13,14 @@ ReaderPscreen::ReaderPscreen()
     s_img = cv::Mat();
 
     std::cout<<"Init OK"<<std::endl;
+
+}
+
+void ReaderPscreen::Config(std::vector<cv::Rect>s_cut)
+{
+    s_cortes = s_cut;
+
+    std::cout<<"Config OK"<<std::endl;
 
 }
 
@@ -25,6 +35,13 @@ cv::Mat ReaderPscreen::GetScreen(){
     return tmp;
 }
 
+std::vector<cv::Mat>ReaderPscreen::GetCuts(){
+    lock_s_img.lock();
+    std::vector<cv::Mat> tmp = res_img;
+    lock_s_img.unlock();
+    return tmp;
+}
+
 void *ReaderPscreen::CapLoop(void){
     int Width = 0;
     int Height = 0;
@@ -33,6 +50,12 @@ void *ReaderPscreen::CapLoop(void){
     while(cap){
         lock_s_img.lock();
         cv::Mat img = ImageFromDisplay(Pixels, Width, Height, Bpp);//ImageFromDisplay(Pixels, Width, Height, Bpp);
+        if(s_cortes.size() > 0){
+            res_img.clear();
+            for (size_t i = 0; i < s_cortes.size() ; i++) {
+                res_img.push_back(img(s_cortes[i]));
+            }
+        }
         lock_s_img.unlock();
         s_img = img;
         usleep(128);

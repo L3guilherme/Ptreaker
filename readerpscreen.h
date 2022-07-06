@@ -20,12 +20,16 @@ class ReaderPscreen
 {
 public:
     ReaderPscreen();
-    cv::Mat ImageFromDisplay(std::vector<uint8_t>& Pixels, int& Width, int& Height, int& BitsPerPixel);
+    void Config(std::vector<cv::Rect> s_cut);
     void StopCap();
     void RunContCap();
     cv::Mat GetScreen();
-    void *CapLoop(void);
+    std::vector<cv::Mat> GetCuts();
+
+private:
     static void* CallCap(void *arg){return ((ReaderPscreen*)arg)->CapLoop();}
+    void *CapLoop(void);
+    cv::Mat ImageFromDisplay(std::vector<uint8_t>& Pixels, int& Width, int& Height, int& BitsPerPixel);
 };
 
 #endif // READERPSCREEN_H
