@@ -16,6 +16,10 @@
 
 #include <mutex>
 
+extern "C" {
+#include <xdo.h>
+}
+
 class ReaderPscreen
 {
 public:

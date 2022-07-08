@@ -1,10 +1,14 @@
 #include "readerpscreen.h"
+extern "C" {
+#include <xdo.h>
+}
 
 bool cap;
 cv::Mat s_img;
 std::mutex lock_s_img;
 std::vector<cv::Rect>s_cortes;
 std::vector<cv::Mat>res_img;
+xdo_t *xdo = xdo_new(NULL);
 
 
 ReaderPscreen::ReaderPscreen()
@@ -19,6 +23,49 @@ ReaderPscreen::ReaderPscreen()
 void ReaderPscreen::Config(std::vector<cv::Rect>s_cut)
 {
     s_cortes = s_cut;
+    Window *list = NULL;
+    xdo_search_t search;
+    unsigned int nwindows;
+
+    memset(&search, 0, sizeof(xdo_search_t));
+    search.max_depth = -1;
+    search.require = xdo_search::SEARCH_ANY;
+    search.searchmask |= SEARCH_NAME;
+    search.winname = "USD";
+    search.searchmask |= SEARCH_CLASS;
+    search.winclass = "USD";
+    search.searchmask |= SEARCH_CLASSNAME;
+    search.winclassname = "USD";
+
+    //free(list);
+    usleep(100*1000);
+    xdo_search_windows(xdo, &search, &list, &nwindows);
+    usleep(50*1000);
+    for (int k = 0; k < 2; ++k)
+    for (uint i = 0; i < nwindows; i++) {
+        usleep(50*1000);
+        xdo_set_window_size(xdo, list[i], s_cortes[i].width, s_cortes[i].height, 0);
+        usleep(50*1000);
+        xdo_move_window(xdo,list[i],s_cortes[i].tl().x,s_cortes[i].tl().y);
+        usleep(50*1000);
+    }
+
+    //    xdo_move_mouse(xdo,50,125,0);
+    //    usleep(500*1000);
+    //    xdo_mouse_down(xdo,CURRENTWINDOW,1);
+    //    usleep(200*1000);
+    //    xdo_mouse_up(xdo,CURRENTWINDOW,1);
+    //    usleep(500*1000);
+
+    //    uchar *name;
+    //    int name_len;
+    //    int name_type;
+
+    //    xdo_get_window_name(xdo, CURRENTWINDOW, &name, &name_len, &name_type);
+    //    std::cout<<name<<std::endl;
+    //    std::cout<<name_len<<std::endl;
+    //    std::cout<<name_type<<std::endl;
+
 
     std::cout<<"Config OK"<<std::endl;
 
