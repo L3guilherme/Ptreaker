@@ -9,6 +9,7 @@ std::mutex lock_s_img;
 std::vector<cv::Rect>s_cortes;
 std::vector<cv::Mat>res_img;
 xdo_t *xdo = xdo_new(NULL);
+Window *list_win = NULL;
 
 
 ReaderPscreen::ReaderPscreen()
@@ -23,7 +24,6 @@ ReaderPscreen::ReaderPscreen()
 void ReaderPscreen::Config(std::vector<cv::Rect>s_cut)
 {
     s_cortes = s_cut;
-    Window *list = NULL;
     xdo_search_t search;
     unsigned int nwindows;
 
@@ -39,32 +39,16 @@ void ReaderPscreen::Config(std::vector<cv::Rect>s_cut)
 
     //free(list);
     usleep(100*1000);
-    xdo_search_windows(xdo, &search, &list, &nwindows);
+    xdo_search_windows(xdo, &search, &list_win, &nwindows);
     usleep(50*1000);
     for (int k = 0; k < 2; ++k)
     for (uint i = 0; i < nwindows; i++) {
         usleep(50*1000);
-        xdo_set_window_size(xdo, list[i], s_cortes[i].width, s_cortes[i].height, 0);
+        xdo_set_window_size(xdo, list_win[i], s_cortes[i].width, s_cortes[i].height, 0);
         usleep(50*1000);
-        xdo_move_window(xdo,list[i],s_cortes[i].tl().x,s_cortes[i].tl().y);
+        xdo_move_window(xdo,list_win[i],s_cortes[i].tl().x,s_cortes[i].tl().y);
         usleep(50*1000);
     }
-
-    //    xdo_move_mouse(xdo,50,125,0);
-    //    usleep(500*1000);
-    //    xdo_mouse_down(xdo,CURRENTWINDOW,1);
-    //    usleep(200*1000);
-    //    xdo_mouse_up(xdo,CURRENTWINDOW,1);
-    //    usleep(500*1000);
-
-    //    uchar *name;
-    //    int name_len;
-    //    int name_type;
-
-    //    xdo_get_window_name(xdo, CURRENTWINDOW, &name, &name_len, &name_type);
-    //    std::cout<<name<<std::endl;
-    //    std::cout<<name_len<<std::endl;
-    //    std::cout<<name_type<<std::endl;
 
 
     std::cout<<"Config OK"<<std::endl;
@@ -103,11 +87,12 @@ void *ReaderPscreen::CapLoop(void){
                 res_img.push_back(img(s_cortes[i]));
             }
         }
+
         lock_s_img.unlock();
         s_img = img;
-        usleep(128);
+        usleep(5*1000);
+
     }
-    //cv::destroyWindow("Tela");
     std::cout<<"FIM"<<std::endl;
     return nullptr;
 }
@@ -119,7 +104,7 @@ void ReaderPscreen::RunContCap(){
     if(cap){
         pthread_t tidImg;
         int resultImg;
-        resultImg = pthread_create(&tidImg, 0, ReaderPscreen::CallCap, (void *)1);
+        resultImg = pthread_create(&tidImg, nullptr, ReaderPscreen::CallCap, this);
         if (resultImg == 0)
             pthread_detach(tidImg);
     }

@@ -32,7 +32,7 @@ public:
 
 private:
     static void* CallCap(void *arg){return ((ReaderPscreen*)arg)->CapLoop();}
-    void *CapLoop(void);
+    void *CapLoop(void );
     cv::Mat ImageFromDisplay(std::vector<uint8_t>& Pixels, int& Width, int& Height, int& BitsPerPixel);
 };
 
