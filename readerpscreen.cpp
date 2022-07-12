@@ -90,10 +90,10 @@ void *ReaderPscreen::CapLoop(void){
 
         lock_s_img.unlock();
         s_img = img;
-        usleep(5*1000);
+        usleep(10*1000);
 
     }
-    std::cout<<"FIM"<<std::endl;
+    std::cout<<"FIM Cap"<<std::endl;
     return nullptr;
 }
 
