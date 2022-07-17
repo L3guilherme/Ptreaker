@@ -50,6 +50,9 @@ void ReaderPscreen::Config(std::vector<cv::Rect>s_cut)
         usleep(50*1000);
     }
 
+    naipes_ref.push_back(cv::imread("paus.png"));
+    ordem_naipes.push_back("paus");
+
 
     std::cout<<"Config OK"<<std::endl;
 
@@ -137,4 +140,34 @@ cv::Mat ReaderPscreen::ImageFromDisplay(std::vector<uint8_t>& Pixels, int& Width
     }
 
     return cv::Mat();
+}
+
+void ReaderPscreen::Get_cartas_MT(cv::Mat img){
+        cv::Mat resM;
+        double minVal; double maxVal; cv::Point minLoc; cv::Point maxLoc;
+        int minDist = 9999;
+
+        cv::Mat ref_np,img_busca;
+        cv::cvtColor(naipes_ref[0],ref_np,cv::COLOR_BGR2GRAY);
+        cv::cvtColor(img,img_busca,cv::COLOR_BGR2GRAY);
+        cv::matchTemplate(img_busca,ref_np,resM,cv::TM_SQDIFF_NORMED);//CV_TM_CCOEFF_NORMED CV_TM_SQDIFF_NORMED
+
+        cv::minMaxLoc( resM, &minVal, &maxVal, &minLoc, &maxLoc, cv::Mat() );
+        cv::Point centro= cv::Point( minLoc.x  , minLoc.y  );
+        cv::circle(img,centro,3,cv::Scalar(255,255,0),-1);
+        cv::Point p2= cv::Point( (minLoc.x ) , (minLoc.y ) );
+        cv::rectangle( img, minLoc, p2, cv::Scalar(255,0,255), 2, 8, 0 );
+}
+
+std::vector<std::string> ReaderPscreen::Get_fl(cv::Mat img,cv::Rect ref){
+
+    cv::Mat img_toRead = img(ref);
+
+    Get_cartas_MT(img_toRead);
+
+    cv::imshow("floop",img_toRead);
+
+    std::vector<std::string>res;
+    return  res;
+
 }
