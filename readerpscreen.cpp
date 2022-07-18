@@ -42,16 +42,22 @@ void ReaderPscreen::Config(std::vector<cv::Rect>s_cut)
     xdo_search_windows(xdo, &search, &list_win, &nwindows);
     usleep(50*1000);
     for (int k = 0; k < 2; ++k)
-    for (uint i = 0; i < nwindows; i++) {
-        usleep(50*1000);
-        xdo_set_window_size(xdo, list_win[i], s_cortes[i].width, s_cortes[i].height, 0);
-        usleep(50*1000);
-        xdo_move_window(xdo,list_win[i],s_cortes[i].tl().x,s_cortes[i].tl().y);
-        usleep(50*1000);
-    }
+        for (uint i = 0; i < nwindows; i++) {
+            usleep(50*1000);
+            xdo_set_window_size(xdo, list_win[i], s_cortes[i].width, s_cortes[i].height, 0);
+            usleep(50*1000);
+            xdo_move_window(xdo,list_win[i],s_cortes[i].tl().x,s_cortes[i].tl().y);
+            usleep(50*1000);
+        }
 
-    naipes_ref.push_back(cv::imread("paus.png"));
-    ordem_naipes.push_back("paus");
+    naipes_ref.push_back(cv::imread("paus.png",cv::IMREAD_GRAYSCALE));
+    ordem_naipes.push_back("P");
+    naipes_ref.push_back(cv::imread("ouros.png",cv::IMREAD_GRAYSCALE));
+    ordem_naipes.push_back("O");
+    naipes_ref.push_back(cv::imread("copas.png",cv::IMREAD_GRAYSCALE));
+    ordem_naipes.push_back("C");
+    naipes_ref.push_back(cv::imread("espadas.png",cv::IMREAD_GRAYSCALE));
+    ordem_naipes.push_back("E");
 
 
     std::cout<<"Config OK"<<std::endl;
@@ -143,20 +149,48 @@ cv::Mat ReaderPscreen::ImageFromDisplay(std::vector<uint8_t>& Pixels, int& Width
 }
 
 void ReaderPscreen::Get_cartas_MT(cv::Mat img){
-        cv::Mat resM;
-        double minVal; double maxVal; cv::Point minLoc; cv::Point maxLoc;
-        int minDist = 9999;
+    cv::Mat resM;
+    std::vector<cv::Point>pos_cd;
+    std::vector<cv::String>tipo_cd;
 
-        cv::Mat ref_np,img_busca;
-        cv::cvtColor(naipes_ref[0],ref_np,cv::COLOR_BGR2GRAY);
-        cv::cvtColor(img,img_busca,cv::COLOR_BGR2GRAY);
-        cv::matchTemplate(img_busca,ref_np,resM,cv::TM_SQDIFF_NORMED);//CV_TM_CCOEFF_NORMED CV_TM_SQDIFF_NORMED
+    cv::Mat img_busca;
+    cv::cvtColor(img,img_busca,cv::COLOR_BGR2GRAY);
 
-        cv::minMaxLoc( resM, &minVal, &maxVal, &minLoc, &maxLoc, cv::Mat() );
-        cv::Point centro= cv::Point( minLoc.x  , minLoc.y  );
-        cv::circle(img,centro,3,cv::Scalar(255,255,0),-1);
-        cv::Point p2= cv::Point( (minLoc.x ) , (minLoc.y ) );
-        cv::rectangle( img, minLoc, p2, cv::Scalar(255,0,255), 2, 8, 0 );
+    for (size_t np = 0; np < naipes_ref.size(); np++) {
+
+        cv::matchTemplate(img_busca,naipes_ref[np],resM,cv::TM_SQDIFF_NORMED);//CV_TM_CCOEFF_NORMED CV_TM_SQDIFF_NORMED
+
+        cv::Mat res_th;
+        cv::threshold(resM,res_th,0.1,255.0,cv::THRESH_BINARY_INV);
+        res_th.convertTo(res_th,CV_8UC1);
+
+        std::vector<std::vector<cv::Point>>contours;
+        cv::findContours(res_th.clone(), contours, cv::RETR_TREE, cv::CHAIN_APPROX_SIMPLE);
+
+        for( size_t i = 0; i < contours.size(); i++ )
+        {
+            std::vector<cv::Point> contours_poly;
+            cv::Rect boundRect;
+            cv::approxPolyDP( contours[i], contours_poly, 3, true );
+            boundRect = cv::boundingRect( contours_poly );
+            cv::rectangle(img,cv::Rect(boundRect.tl().x,boundRect.tl().y,15,15),cv::Scalar(255,0,0));
+            pos_cd.push_back(boundRect.tl());
+            tipo_cd.push_back(ordem_naipes[np]);
+
+        }
+
+    }
+
+
+//    struct {
+//        bool operator()(int a, int b) const { return a < b; }
+//    } customLess;
+//    std::sort(s.begin(), s.end(), customLess);
+
+
+    //cv::Point centro= cv::Point( minLoc.x  , minLoc.y  );
+    //cv::circle(img,centro,3,cv::Scalar(255,255,0),-1);
+
 }
 
 std::vector<std::string> ReaderPscreen::Get_fl(cv::Mat img,cv::Rect ref){
