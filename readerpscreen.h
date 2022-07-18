@@ -36,7 +36,7 @@ private:
     void *CapLoop(void );
     cv::Mat ImageFromDisplay(std::vector<uint8_t>& Pixels, int& Width, int& Height, int& BitsPerPixel);
     std::vector<cv::Mat> naipes_ref;
-    std::vector<std::string>ordem_naipes;
+    std::vector<char>ordem_naipes;
     void Get_cartas_MT(cv::Mat img);
 };
 

@@ -51,13 +51,13 @@ void ReaderPscreen::Config(std::vector<cv::Rect>s_cut)
         }
 
     naipes_ref.push_back(cv::imread("paus.png",cv::IMREAD_GRAYSCALE));
-    ordem_naipes.push_back("P");
+    ordem_naipes.push_back('P');
     naipes_ref.push_back(cv::imread("ouros.png",cv::IMREAD_GRAYSCALE));
-    ordem_naipes.push_back("O");
+    ordem_naipes.push_back('O');
     naipes_ref.push_back(cv::imread("copas.png",cv::IMREAD_GRAYSCALE));
-    ordem_naipes.push_back("C");
+    ordem_naipes.push_back('C');
     naipes_ref.push_back(cv::imread("espadas.png",cv::IMREAD_GRAYSCALE));
-    ordem_naipes.push_back("E");
+    ordem_naipes.push_back('E');
 
 
     std::cout<<"Config OK"<<std::endl;
@@ -150,18 +150,22 @@ cv::Mat ReaderPscreen::ImageFromDisplay(std::vector<uint8_t>& Pixels, int& Width
 
 void ReaderPscreen::Get_cartas_MT(cv::Mat img){
     cv::Mat resM;
-    std::vector<cv::Point>pos_cd;
-    std::vector<cv::String>tipo_cd;
-
     cv::Mat img_busca;
     cv::cvtColor(img,img_busca,cv::COLOR_BGR2GRAY);
+
+    struct carta
+    {
+        char tipo;
+        cv::Point pos;
+        int num;
+    };std::vector<carta>cartas;
 
     for (size_t np = 0; np < naipes_ref.size(); np++) {
 
         cv::matchTemplate(img_busca,naipes_ref[np],resM,cv::TM_SQDIFF_NORMED);//CV_TM_CCOEFF_NORMED CV_TM_SQDIFF_NORMED
 
         cv::Mat res_th;
-        cv::threshold(resM,res_th,0.1,255.0,cv::THRESH_BINARY_INV);
+        cv::threshold(resM,res_th,0.001,255.0,cv::THRESH_BINARY_INV);
         res_th.convertTo(res_th,CV_8UC1);
 
         std::vector<std::vector<cv::Point>>contours;
@@ -174,22 +178,24 @@ void ReaderPscreen::Get_cartas_MT(cv::Mat img){
             cv::approxPolyDP( contours[i], contours_poly, 3, true );
             boundRect = cv::boundingRect( contours_poly );
             cv::rectangle(img,cv::Rect(boundRect.tl().x,boundRect.tl().y,15,15),cv::Scalar(255,0,0));
-            pos_cd.push_back(boundRect.tl());
-            tipo_cd.push_back(ordem_naipes[np]);
-
+            carta tmp_c;
+            tmp_c.tipo = ordem_naipes[np];
+            tmp_c.pos = boundRect.tl();
+            tmp_c.num = -1;
+            cartas.push_back(tmp_c);
         }
-
     }
 
+    struct {
+            bool operator()(carta a, carta b) const { return a.pos.x < b.pos.x; }
+        } customLess;
+        std::sort(cartas.begin(), cartas.end(), customLess);
 
-//    struct {
-//        bool operator()(int a, int b) const { return a < b; }
-//    } customLess;
-//    std::sort(s.begin(), s.end(), customLess);
 
-
-    //cv::Point centro= cv::Point( minLoc.x  , minLoc.y  );
-    //cv::circle(img,centro,3,cv::Scalar(255,255,0),-1);
+    for (size_t i = 0; i < cartas.size(); i++){
+        std::cout<<cartas[i].tipo<<" : ";
+    }
+    std::cout<<std::endl;
 
 }
 
