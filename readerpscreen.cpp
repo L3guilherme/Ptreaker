@@ -59,6 +59,25 @@ void ReaderPscreen::Config(std::vector<cv::Rect>s_cut)
     naipes_ref.push_back(cv::imread("espadas.png",cv::IMREAD_GRAYSCALE));
     ordem_naipes.push_back('E');
 
+    cartas_ref.push_back(cv::imread("3.png",cv::IMREAD_GRAYSCALE));
+    ordem_cartas.push_back(3);
+    cartas_ref.push_back(cv::imread("4.png",cv::IMREAD_GRAYSCALE));
+    ordem_cartas.push_back(4);
+    cartas_ref.push_back(cv::imread("5.png",cv::IMREAD_GRAYSCALE));
+    ordem_cartas.push_back(5);
+    cartas_ref.push_back(cv::imread("6.png",cv::IMREAD_GRAYSCALE));
+    ordem_cartas.push_back(6);
+    cartas_ref.push_back(cv::imread("7.png",cv::IMREAD_GRAYSCALE));
+    ordem_cartas.push_back(7);
+    cartas_ref.push_back(cv::imread("10.png",cv::IMREAD_GRAYSCALE));
+    ordem_cartas.push_back(10);
+    cartas_ref.push_back(cv::imread("Q.png",cv::IMREAD_GRAYSCALE));
+    ordem_cartas.push_back(11);
+    cartas_ref.push_back(cv::imread("J.png",cv::IMREAD_GRAYSCALE));
+    ordem_cartas.push_back(12);
+
+    ref_DL = cv::imread("DL.png",cv::IMREAD_GRAYSCALE);
+
 
     std::cout<<"Config OK"<<std::endl;
 
@@ -148,24 +167,20 @@ cv::Mat ReaderPscreen::ImageFromDisplay(std::vector<uint8_t>& Pixels, int& Width
     return cv::Mat();
 }
 
-void ReaderPscreen::Get_cartas_MT(cv::Mat img){
-    cv::Mat resM;
+std::vector<carta> ReaderPscreen::Get_cartas_MT(cv::Mat img){
+
     cv::Mat img_busca;
     cv::cvtColor(img,img_busca,cv::COLOR_BGR2GRAY);
 
-    struct carta
-    {
-        char tipo;
-        cv::Point pos;
-        int num;
-    };std::vector<carta>cartas;
+    std::vector<carta>cartas;
 
     for (size_t np = 0; np < naipes_ref.size(); np++) {
 
+        cv::Mat resM;
         cv::matchTemplate(img_busca,naipes_ref[np],resM,cv::TM_SQDIFF_NORMED);//CV_TM_CCOEFF_NORMED CV_TM_SQDIFF_NORMED
 
         cv::Mat res_th;
-        cv::threshold(resM,res_th,0.001,255.0,cv::THRESH_BINARY_INV);
+        cv::threshold(resM,res_th,0.005,255.0,cv::THRESH_BINARY_INV);
         res_th.convertTo(res_th,CV_8UC1);
 
         std::vector<std::vector<cv::Point>>contours;
@@ -177,7 +192,7 @@ void ReaderPscreen::Get_cartas_MT(cv::Mat img){
             cv::Rect boundRect;
             cv::approxPolyDP( contours[i], contours_poly, 3, true );
             boundRect = cv::boundingRect( contours_poly );
-            cv::rectangle(img,cv::Rect(boundRect.tl().x,boundRect.tl().y,15,15),cv::Scalar(255,0,0));
+            //cv::rectangle(img,cv::Rect(boundRect.tl().x,boundRect.tl().y,15,15),cv::Scalar(255,0,0));
             carta tmp_c;
             tmp_c.tipo = ordem_naipes[np];
             tmp_c.pos = boundRect.tl();
@@ -187,27 +202,58 @@ void ReaderPscreen::Get_cartas_MT(cv::Mat img){
     }
 
     struct {
-            bool operator()(carta a, carta b) const { return a.pos.x < b.pos.x; }
-        } customLess;
-        std::sort(cartas.begin(), cartas.end(), customLess);
+        bool operator()(carta a, carta b) const { return a.pos.x < b.pos.x; }
+    } customLess;
+    std::sort(cartas.begin(), cartas.end(), customLess);
 
 
     for (size_t i = 0; i < cartas.size(); i++){
-        std::cout<<cartas[i].tipo<<" : ";
+        cv::Mat ref = img_busca(cv::Rect(cartas[i].pos.x-2,cartas[i].pos.y-25,20,28));
+
+        for (size_t j = 0; j < cartas_ref.size(); j++){
+            cv::Mat resM2;
+            cv::matchTemplate(ref,cartas_ref[j],resM2,cv::TM_SQDIFF_NORMED);//CV_TM_CCOEFF_NORMED CV_TM_SQDIFF_NORMED
+            cv::Mat res_th;
+            cv::threshold(resM2,res_th,0.1,255.0,cv::THRESH_BINARY_INV);
+            res_th.convertTo(res_th,CV_8UC1);
+            if(cv::countNonZero(res_th)>=1){
+                cartas[i].num = ordem_cartas[j];
+            }
+        }
     }
-    std::cout<<std::endl;
+    for (size_t i = 0; i < cartas.size(); i++){
+        std::cout<<cartas[i].tipo<<" : "<<cartas[i].num<<" ; ";
+    }
+
+    return cartas;
 
 }
 
-std::vector<std::string> ReaderPscreen::Get_fl(cv::Mat img,cv::Rect ref){
+std::vector<carta> ReaderPscreen::Get_fl(cv::Mat img,cv::Rect ref){
 
     cv::Mat img_toRead = img(ref);
 
-    Get_cartas_MT(img_toRead);
+    std::vector<carta> res = Get_cartas_MT(img_toRead);
 
     cv::imshow("floop",img_toRead);
 
-    std::vector<std::string>res;
     return  res;
+
+}
+
+int ReaderPscreen::Find_DL(cv::Mat img){
+
+    cv::Mat img_busca;
+    cv::cvtColor(img,img_busca,cv::COLOR_BGR2GRAY);
+    double minVal; double maxVal; cv::Point minLoc; cv::Point maxLoc;
+
+    cv::Mat resM;
+    cv::matchTemplate(img_busca,ref_DL,resM,cv::TM_SQDIFF_NORMED);
+    cv::minMaxLoc( resM, &minVal, &maxVal, &minLoc, &maxLoc, cv::Mat() );
+    cv::rectangle( img, cv::Rect(minLoc.x,minLoc.y,ref_DL.cols,ref_DL.rows), cv::Scalar(255,0,255), 2, 8, 0 );
+
+    cv::imshow("DL",img);
+
+    return 0;
 
 }

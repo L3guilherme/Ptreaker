@@ -20,6 +20,13 @@ extern "C" {
 #include <xdo.h>
 }
 
+struct carta
+{
+    char tipo;
+    cv::Point pos;
+    int num;
+};
+
 class ReaderPscreen
 {
 public:
@@ -29,7 +36,8 @@ public:
     void RunContCap();
     cv::Mat GetScreen();
     std::vector<cv::Mat> GetCuts();
-    std::vector<std::string> Get_fl(cv::Mat img, cv::Rect ref);
+    std::vector<carta> Get_fl(cv::Mat img, cv::Rect ref);
+    int Find_DL(cv::Mat img);
 
 private:
     static void* CallCap(void *arg){return ((ReaderPscreen*)arg)->CapLoop();}
@@ -37,7 +45,10 @@ private:
     cv::Mat ImageFromDisplay(std::vector<uint8_t>& Pixels, int& Width, int& Height, int& BitsPerPixel);
     std::vector<cv::Mat> naipes_ref;
     std::vector<char>ordem_naipes;
-    void Get_cartas_MT(cv::Mat img);
+    std::vector<cv::Mat> cartas_ref;
+    std::vector<int>ordem_cartas;
+    cv::Mat ref_DL;
+    std::vector<carta> Get_cartas_MT(cv::Mat img);
 };
 
 #endif // READERPSCREEN_H
