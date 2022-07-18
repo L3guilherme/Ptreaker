@@ -27,6 +27,15 @@ struct carta
     int num;
 };
 
+struct Jogador{
+    int eDealer;
+    bool jogando;
+    int jogada;
+    int pos;
+    cv::Point centro;
+    cv::Rect ref;
+};
+
 class ReaderPscreen
 {
 public:
@@ -43,12 +52,16 @@ private:
     static void* CallCap(void *arg){return ((ReaderPscreen*)arg)->CapLoop();}
     void *CapLoop(void );
     cv::Mat ImageFromDisplay(std::vector<uint8_t>& Pixels, int& Width, int& Height, int& BitsPerPixel);
+
+    std::vector<carta> Get_cartas_MT(cv::Mat img);
     std::vector<cv::Mat> naipes_ref;
     std::vector<char>ordem_naipes;
     std::vector<cv::Mat> cartas_ref;
     std::vector<int>ordem_cartas;
     cv::Mat ref_DL;
-    std::vector<carta> Get_cartas_MT(cv::Mat img);
+    std::vector<Jogador> jogadores;
+    cv::Size tam_jogador;
+
 };
 
 #endif // READERPSCREEN_H

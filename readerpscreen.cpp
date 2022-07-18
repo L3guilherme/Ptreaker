@@ -78,6 +78,33 @@ void ReaderPscreen::Config(std::vector<cv::Rect>s_cut)
 
     ref_DL = cv::imread("DL.png",cv::IMREAD_GRAYSCALE);
 
+    Jogador tmpJ;
+    tmpJ.eDealer = 0;
+    tmpJ.jogada = -1;
+    tmpJ.jogando = False;
+    tmpJ.pos = -1;
+    tmpJ.centro = cv::Point(0,0);
+    tmpJ.ref = cv::Rect();
+
+    for(uint i =0;i<6;i++){
+        jogadores.push_back(tmpJ);
+        jogadores[i].pos = i;
+    }
+
+    tam_jogador = cv::Size(104,52);
+    jogadores[0].centro = cv::Point(269+(int(tam_jogador.width/2)),233+(int(tam_jogador.height/2)));
+    jogadores[1].centro = cv::Point(70+(int(tam_jogador.width/2)),168+(int(tam_jogador.height/2)));
+    jogadores[2].centro = cv::Point(88+(int(tam_jogador.width/2)),88+(int(tam_jogador.height/2)));
+    jogadores[3].centro = cv::Point(269+(int(tam_jogador.width/2)),20+(int(tam_jogador.height/2)));
+    jogadores[4].centro = cv::Point(446+(int(tam_jogador.width/2)),55+(int(tam_jogador.height/2)));
+    jogadores[5].centro = cv::Point(464+(int(tam_jogador.width/2)),200+(int(tam_jogador.height/2)));
+
+    jogadores[0].ref = cv::Rect(269,233,tam_jogador.width,tam_jogador.height);
+    jogadores[1].ref = cv::Rect(70,168,tam_jogador.width,tam_jogador.height);
+    jogadores[2].ref = cv::Rect(88,88,tam_jogador.width,tam_jogador.height);
+    jogadores[3].ref = cv::Rect(269,20,tam_jogador.width,tam_jogador.height);
+    jogadores[4].ref = cv::Rect(446,55,tam_jogador.width,tam_jogador.height);
+    jogadores[5].ref = cv::Rect(464,200,tam_jogador.width,tam_jogador.height);
 
     std::cout<<"Config OK"<<std::endl;
 
@@ -252,8 +279,27 @@ int ReaderPscreen::Find_DL(cv::Mat img){
     cv::minMaxLoc( resM, &minVal, &maxVal, &minLoc, &maxLoc, cv::Mat() );
     cv::rectangle( img, cv::Rect(minLoc.x,minLoc.y,ref_DL.cols,ref_DL.rows), cv::Scalar(255,0,255), 2, 8, 0 );
 
-    cv::imshow("DL",img);
+    struct Jdist
+    {
+        double dist;
+        int pos;
+    };std::vector<Jdist> tmpJ;
+    for (size_t i = 0; i < jogadores.size(); i++) {
+        Jdist tmp;
+        tmp.dist = std::sqrt(std::pow(jogadores[i].centro.x-minLoc.x,2)+std::pow(jogadores[i].centro.y-minLoc.y,2));
+        tmp.pos = jogadores[i].pos;
+        tmpJ.push_back(tmp);
+    }
+    struct {
+        bool operator()(Jdist a, Jdist b) const { return a.dist < b.dist; }
+    } customLess;
+    std::sort(tmpJ.begin(), tmpJ.end(), customLess);
 
-    return 0;
+    //cv::imshow("DL",img);
+
+    //std::cout<<"Delar: "<<std::endl;
+    //std::cout<<tmpJ[0].pos<<std::endl;
+
+    return tmpJ[0].pos;
 
 }
