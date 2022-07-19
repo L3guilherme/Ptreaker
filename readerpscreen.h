@@ -45,7 +45,7 @@ public:
     void RunContCap();
     cv::Mat GetScreen();
     std::vector<cv::Mat> GetCuts();
-    std::vector<carta> Get_fl(cv::Mat img, cv::Rect ref);
+    std::vector<carta> Get_fl(cv::Mat img, cv::Rect ref, int index = 0);
     int Find_DL(cv::Mat img);
 
 private:

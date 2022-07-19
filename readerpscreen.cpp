@@ -27,15 +27,18 @@ void ReaderPscreen::Config(std::vector<cv::Rect>s_cut)
     xdo_search_t search;
     unsigned int nwindows;
 
+    std::string nomeJan = "USD";
+
     memset(&search, 0, sizeof(xdo_search_t));
     search.max_depth = -1;
     search.require = xdo_search::SEARCH_ANY;
     search.searchmask |= SEARCH_NAME;
-    search.winname = "USD";
+    search.winname = nomeJan.c_str();
     search.searchmask |= SEARCH_CLASS;
-    search.winclass = "USD";
+    search.winclass = nomeJan.c_str();
     search.searchmask |= SEARCH_CLASSNAME;
-    search.winclassname = "USD";
+    search.winclassname = nomeJan.c_str();
+
 
     //free(list);
     usleep(100*1000);
@@ -46,7 +49,10 @@ void ReaderPscreen::Config(std::vector<cv::Rect>s_cut)
             usleep(50*1000);
             xdo_set_window_size(xdo, list_win[i], s_cortes[i].width, s_cortes[i].height, 0);
             usleep(50*1000);
-            xdo_move_window(xdo,list_win[i],s_cortes[i].tl().x,s_cortes[i].tl().y);
+            if (s_cortes[i].tl().y == 30)
+                xdo_move_window(xdo,list_win[i],s_cortes[i].tl().x,0);
+            else
+                xdo_move_window(xdo,list_win[i],s_cortes[i].tl().x,s_cortes[i].tl().y);
             usleep(50*1000);
         }
 
@@ -59,22 +65,32 @@ void ReaderPscreen::Config(std::vector<cv::Rect>s_cut)
     naipes_ref.push_back(cv::imread("espadas.png",cv::IMREAD_GRAYSCALE));
     ordem_naipes.push_back('E');
 
-    cartas_ref.push_back(cv::imread("3.png",cv::IMREAD_GRAYSCALE));
+    cartas_ref.push_back(cv::imread("1_0.png",cv::IMREAD_GRAYSCALE));
+    ordem_cartas.push_back(1);
+    cartas_ref.push_back(cv::imread("2_0.png",cv::IMREAD_GRAYSCALE));
+    ordem_cartas.push_back(2);
+    cartas_ref.push_back(cv::imread("3_0.png",cv::IMREAD_GRAYSCALE));
     ordem_cartas.push_back(3);
-    cartas_ref.push_back(cv::imread("4.png",cv::IMREAD_GRAYSCALE));
+    cartas_ref.push_back(cv::imread("4_0.png",cv::IMREAD_GRAYSCALE));
     ordem_cartas.push_back(4);
-    cartas_ref.push_back(cv::imread("5.png",cv::IMREAD_GRAYSCALE));
+    cartas_ref.push_back(cv::imread("5_0.png",cv::IMREAD_GRAYSCALE));
     ordem_cartas.push_back(5);
-    cartas_ref.push_back(cv::imread("6.png",cv::IMREAD_GRAYSCALE));
+    cartas_ref.push_back(cv::imread("6_0.png",cv::IMREAD_GRAYSCALE));
     ordem_cartas.push_back(6);
-    cartas_ref.push_back(cv::imread("7.png",cv::IMREAD_GRAYSCALE));
+    cartas_ref.push_back(cv::imread("7_0.png",cv::IMREAD_GRAYSCALE));
     ordem_cartas.push_back(7);
-    cartas_ref.push_back(cv::imread("10.png",cv::IMREAD_GRAYSCALE));
+    cartas_ref.push_back(cv::imread("8_0.png",cv::IMREAD_GRAYSCALE));
+    ordem_cartas.push_back(8);
+    cartas_ref.push_back(cv::imread("9_0.png",cv::IMREAD_GRAYSCALE));
+    ordem_cartas.push_back(9);
+    cartas_ref.push_back(cv::imread("10_0.png",cv::IMREAD_GRAYSCALE));
     ordem_cartas.push_back(10);
-    cartas_ref.push_back(cv::imread("Q.png",cv::IMREAD_GRAYSCALE));
+    cartas_ref.push_back(cv::imread("11_0.png",cv::IMREAD_GRAYSCALE));
     ordem_cartas.push_back(11);
-    cartas_ref.push_back(cv::imread("J.png",cv::IMREAD_GRAYSCALE));
+    cartas_ref.push_back(cv::imread("12_0.png",cv::IMREAD_GRAYSCALE));
     ordem_cartas.push_back(12);
+    cartas_ref.push_back(cv::imread("13_0.png",cv::IMREAD_GRAYSCALE));
+    ordem_cartas.push_back(13);
 
     ref_DL = cv::imread("DL.png",cv::IMREAD_GRAYSCALE);
 
@@ -207,7 +223,7 @@ std::vector<carta> ReaderPscreen::Get_cartas_MT(cv::Mat img){
         cv::matchTemplate(img_busca,naipes_ref[np],resM,cv::TM_SQDIFF_NORMED);//CV_TM_CCOEFF_NORMED CV_TM_SQDIFF_NORMED
 
         cv::Mat res_th;
-        cv::threshold(resM,res_th,0.005,255.0,cv::THRESH_BINARY_INV);
+        cv::threshold(resM,res_th,0.05,255.0,cv::THRESH_BINARY_INV);
         res_th.convertTo(res_th,CV_8UC1);
 
         std::vector<std::vector<cv::Point>>contours;
@@ -219,7 +235,7 @@ std::vector<carta> ReaderPscreen::Get_cartas_MT(cv::Mat img){
             cv::Rect boundRect;
             cv::approxPolyDP( contours[i], contours_poly, 3, true );
             boundRect = cv::boundingRect( contours_poly );
-            //cv::rectangle(img,cv::Rect(boundRect.tl().x,boundRect.tl().y,15,15),cv::Scalar(255,0,0));
+            cv::rectangle(img,cv::Rect(boundRect.tl().x,boundRect.tl().y,15,15),cv::Scalar(255,0,0));
             carta tmp_c;
             tmp_c.tipo = ordem_naipes[np];
             tmp_c.pos = boundRect.tl();
@@ -235,13 +251,14 @@ std::vector<carta> ReaderPscreen::Get_cartas_MT(cv::Mat img){
 
 
     for (size_t i = 0; i < cartas.size(); i++){
-        cv::Mat ref = img_busca(cv::Rect(cartas[i].pos.x-2,cartas[i].pos.y-25,20,28));
+        cv::Mat ref = img_busca(cv::Rect(cartas[i].pos.x-4,cartas[i].pos.y-25,20,25));
+        cv::imshow("ref",ref);
 
         for (size_t j = 0; j < cartas_ref.size(); j++){
             cv::Mat resM2;
             cv::matchTemplate(ref,cartas_ref[j],resM2,cv::TM_SQDIFF_NORMED);//CV_TM_CCOEFF_NORMED CV_TM_SQDIFF_NORMED
             cv::Mat res_th;
-            cv::threshold(resM2,res_th,0.1,255.0,cv::THRESH_BINARY_INV);
+            cv::threshold(resM2,res_th,0.01,255.0,cv::THRESH_BINARY_INV);
             res_th.convertTo(res_th,CV_8UC1);
             if(cv::countNonZero(res_th)>=1){
                 cartas[i].num = ordem_cartas[j];
@@ -251,18 +268,19 @@ std::vector<carta> ReaderPscreen::Get_cartas_MT(cv::Mat img){
     for (size_t i = 0; i < cartas.size(); i++){
         std::cout<<cartas[i].tipo<<" : "<<cartas[i].num<<" ; ";
     }
+    std::cout<<std::endl;
 
     return cartas;
 
 }
 
-std::vector<carta> ReaderPscreen::Get_fl(cv::Mat img,cv::Rect ref){
+std::vector<carta> ReaderPscreen::Get_fl(cv::Mat img,cv::Rect ref,int index){
 
     cv::Mat img_toRead = img(ref);
 
     std::vector<carta> res = Get_cartas_MT(img_toRead);
 
-    cv::imshow("floop",img_toRead);
+    cv::imshow("floop "+std::to_string(index),img_toRead);
 
     return  res;
 
@@ -299,6 +317,8 @@ int ReaderPscreen::Find_DL(cv::Mat img){
 
     //std::cout<<"Delar: "<<std::endl;
     //std::cout<<tmpJ[0].pos<<std::endl;
+
+    jogadores[tmpJ[0].pos].eDealer = true;
 
     return tmpJ[0].pos;
 
