@@ -93,6 +93,9 @@ void ReaderPscreen::Config(std::vector<cv::Rect>s_cut)
 
     }
 
+    hog_knn.Load_Imgs_Label(cartas_ref,ordem_cartas);
+    hog_knn.Train();
+
     ref_DL = cv::imread("DL.png",cv::IMREAD_GRAYSCALE);
 
     Jogador tmpJ;
@@ -212,7 +215,6 @@ cv::Mat ReaderPscreen::ImageFromDisplay(std::vector<uint8_t>& Pixels, int& Width
 }
 
 
-int c_sv = 0;
 std::vector<carta> ReaderPscreen::Get_cartas_MT(cv::Mat img,int index){
 
     cv::Mat img_busca;
@@ -263,19 +265,12 @@ std::vector<carta> ReaderPscreen::Get_cartas_MT(cv::Mat img,int index){
         cv::Mat ref = img_busca(rc_ref);
 
         for (size_t j = 0; j < cartas_ref.size(); j++){
-            cv::Mat resM2;
-            cv::matchTemplate(ref,cartas_ref[j],resM2,cv::TM_SQDIFF_NORMED);//CV_TM_CCOEFF_NORMED CV_TM_SQDIFF_NORMED
-            cv::Mat res_th;
-            cv::threshold(resM2,res_th,0.03,255.0,cv::THRESH_BINARY_INV);
-            res_th.convertTo(res_th,CV_8UC1);
-            if(cv::countNonZero(res_th)>=1){
-                cartas[i].num = ordem_cartas[j];
-            }
+            cartas[i].num = hog_knn.Exec(ref);
         }
         cv::rectangle(img,rc_ref,cv::Scalar(0,255,0));
     }
-    c_sv++;
-    std::cout<<c_sv<<std::endl;
+
+
     for (size_t i = 0; i < cartas.size(); i++){
         std::cout<<cartas[i].tipo<<" : "<<cartas[i].num<<" ; ";
     }

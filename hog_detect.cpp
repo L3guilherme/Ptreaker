@@ -262,32 +262,10 @@ void HOG_Detect::Load_Imgs_Label(std::vector<Mat> imgs, std::vector<int> labels)
 
 }
 
-Ptr< SVM > svm;
 void HOG_Detect::Train(){
 
     Mat train_data;
     convert_to_ml( gradient_lst, train_data );
-
-    std::cout<<gradient_lst.size()<<std::endl;
-    std::cout<<train_data.size()<<std::endl;
-
-
-    clog << "Training SVM...";
-    svm = SVM::create();
-    /* Default values to train SVM */
-    svm->setCoef0( 0.0 );
-    svm->setDegree( 3 );
-    svm->setTermCriteria( TermCriteria(TermCriteria::MAX_ITER + TermCriteria::EPS, 1000, 1e-3 ) );
-    svm->setGamma( 0 );
-    svm->setKernel( SVM::LINEAR );//SVM::LINEAR
-    svm->setNu( 0.5 );
-    svm->setP( 0.1 ); // for EPSILON_SVR, epsilon in loss function?
-    svm->setC( 0.01 ); // From paper, soft classifier
-    svm->setType( SVM::EPS_SVR ); // C_SVC; // EPSILON_SVR; // may be also NU_SVR; // do regression task
-    svm->train( train_data, ROW_SAMPLE, labels_lst );
-    g_svm = svm;
-    clog << "...[done]" << endl;
-
 
     Ptr<KNearest> knn = KNearest::create();
     knn->setDefaultK(2);
@@ -307,19 +285,31 @@ int HOG_Detect::Exec(std::vector<cv::Mat> img_in){
     hog.blockSize = cv::Size(10,10);
     hog.blockStride = cv::Size(4,4);
     hog.cellSize = cv::Size(2,2);
-    hog.winSize = cv::Size(18,22);
+    hog.winSize = cv::Size(img_in[0].cols,img_in[0].rows);
 
-    hog.setSVMDetector( get_svm_detector( svm ) );
-
+    cv::Mat resKnn;
     for ( size_t j = 0; j < img_in.size(); j++ )
     {
             vector< float > descriptors;
             hog.compute( img_in[j], descriptors);
-            std::cout<<"KNN"<<std::endl;
-            cv::Mat resKnn;
             g_knn->findNearest(descriptors,1,resKnn);
-            std::cout<<resKnn<<std::endl;
     }
 
-    return 0;
+    return int(resKnn.at<float>(0));
+}
+
+int HOG_Detect::Exec(cv::Mat img_in){
+
+    HOGDescriptor hog;
+    hog.blockSize = cv::Size(10,10);
+    hog.blockStride = cv::Size(4,4);
+    hog.cellSize = cv::Size(2,2);
+    hog.winSize = cv::Size(img_in.cols,img_in.rows);
+
+    cv::Mat resKnn;
+    vector< float > descriptors;
+    hog.compute( img_in, descriptors);
+    g_knn->findNearest(descriptors,1,resKnn);
+
+    return int(resKnn.at<float>(0));
 }

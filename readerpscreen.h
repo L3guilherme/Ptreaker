@@ -64,6 +64,7 @@ private:
     cv::Mat ref_DL;
     std::vector<Jogador> jogadores;
     cv::Size tam_jogador;
+    HOG_Detect hog_knn;
 
 
 

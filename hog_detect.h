@@ -18,6 +18,7 @@ public:
     void Train();
     void Load_Imgs_Label(std::vector<cv::Mat> imgs,std::vector<int>labels);
     int Exec(std::vector<cv::Mat> img_in);
+    int Exec(cv::Mat img_in);
 };
 
 #endif // HOG_DETECT_H
