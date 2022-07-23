@@ -16,6 +16,8 @@
 
 #include <mutex>
 
+#include "Ptreaker/hog_detect.h"
+
 extern "C" {
 #include <xdo.h>
 }
@@ -47,13 +49,14 @@ public:
     std::vector<cv::Mat> GetCuts();
     std::vector<carta> Get_fl(cv::Mat img, cv::Rect ref, int index = 0);
     int Find_DL(cv::Mat img);
+    void TesteHOG();
 
 private:
     static void* CallCap(void *arg){return ((ReaderPscreen*)arg)->CapLoop();}
     void *CapLoop(void );
     cv::Mat ImageFromDisplay(std::vector<uint8_t>& Pixels, int& Width, int& Height, int& BitsPerPixel);
 
-    std::vector<carta> Get_cartas_MT(cv::Mat img);
+    std::vector<carta> Get_cartas_MT(cv::Mat img, int index);
     std::vector<cv::Mat> naipes_ref;
     std::vector<char>ordem_naipes;
     std::vector<cv::Mat> cartas_ref;
@@ -61,6 +64,8 @@ private:
     cv::Mat ref_DL;
     std::vector<Jogador> jogadores;
     cv::Size tam_jogador;
+
+
 
 };
 

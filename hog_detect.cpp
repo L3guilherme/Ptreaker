@@ -204,6 +204,25 @@ void computeHOGs( const Size wsize, const vector< Mat > & img_lst, vector< Mat >
     hog.winSize = wsize;
     Mat gray;
     vector< float > descriptors;
+    hog.blockSize = cv::Size(10,10);
+    hog.blockStride = cv::Size(4,4);
+    hog.cellSize = cv::Size(2,2);
+
+
+    float resW = (hog.winSize.width-hog.blockSize.width) % hog.blockStride.width;
+    std::cout<<"winSize.width: "<<hog.winSize.width<<std::endl;
+    std::cout<<"blockSize.width: "<<hog.blockSize.width<<std::endl;
+    std::cout<<"blockStride.width: "<<hog.blockStride.width<<std::endl;
+    std::cout<<"res W: "<<resW<<std::endl;
+
+    float resY = (hog.winSize.height-hog.blockSize.height) % hog.blockStride.height;
+    std::cout<<"winSize.height: "<<hog.winSize.height<<std::endl;
+    std::cout<<"blockSize.height: "<<hog.blockSize.height<<std::endl;
+    std::cout<<"blockStride.height: "<<hog.blockStride.height<<std::endl;
+    std::cout<<"res Y: "<<resY<<std::endl;
+
+    std::cout<<"hog.cellSize.width: "<<hog.cellSize.width<<std::endl;
+    std::cout<<"hog.cellSize.height: "<<hog.cellSize.height<<std::endl;
 
     for( size_t i = 0 ; i < img_lst.size(); i++ )
     {
@@ -217,13 +236,14 @@ void computeHOGs( const Size wsize, const vector< Mat > & img_lst, vector< Mat >
             //cvtColor( img_lst[i](r), gray, COLOR_BGR2GRAY );
             gray = img_lst[i](r);
 
-            hog.compute( gray, descriptors,Size( 8, 8 ), Size( 0, 0 ));
+
+            hog.compute( gray, descriptors);
             gradient_lst.push_back( Mat( descriptors ).clone() );
 
             if ( use_flip )
             {
                 flip( gray, gray, 1 );
-                hog.compute( gray, descriptors, Size( 8, 8 ), Size( 0, 0 ) );
+                hog.compute( gray, descriptors );
                 gradient_lst.push_back( Mat( descriptors ).clone() );
             }
         }
@@ -242,14 +262,18 @@ void HOG_Detect::Load_Imgs_Label(std::vector<Mat> imgs, std::vector<int> labels)
 
 }
 
+Ptr< SVM > svm;
 void HOG_Detect::Train(){
 
     Mat train_data;
     convert_to_ml( gradient_lst, train_data );
 
+    std::cout<<gradient_lst.size()<<std::endl;
+    std::cout<<train_data.size()<<std::endl;
+
 
     clog << "Training SVM...";
-    Ptr< SVM > svm = SVM::create();
+    svm = SVM::create();
     /* Default values to train SVM */
     svm->setCoef0( 0.0 );
     svm->setDegree( 3 );
@@ -264,35 +288,38 @@ void HOG_Detect::Train(){
     g_svm = svm;
     clog << "...[done]" << endl;
 
+
     Ptr<KNearest> knn = KNearest::create();
     knn->setDefaultK(2);
     knn->setIsClassifier(true);
     knn->train(train_data, ROW_SAMPLE, labels_lst);
 
     g_knn = knn;
+    std::cout<<"FIM!"<<std::endl;
 
 }
 
-int HOG_Detect::Exec(Mat img_in){
+int HOG_Detect::Exec(std::vector<cv::Mat> img_in){
 
     std::cout<<"TESTE"<<std::endl;
 
     HOGDescriptor hog;
-    hog.winSize = img_in.size();
+    hog.blockSize = cv::Size(10,10);
+    hog.blockStride = cv::Size(4,4);
+    hog.cellSize = cv::Size(2,2);
+    hog.winSize = cv::Size(18,22);
 
-    vector< float > descriptors;
+    hog.setSVMDetector( get_svm_detector( svm ) );
 
-    hog.compute( img_in, descriptors, Size( 8, 8 ), Size( 0, 0 ) );
-
-    std::cout<<"SVM"<<std::endl;
-
-    std::cout<<g_svm->predict(descriptors)<<std::endl;
-
-    std::cout<<"KNN"<<std::endl;
-
-    cv::Mat resKnn;
-    g_knn->findNearest(descriptors,2,resKnn);
-    std::cout<<resKnn<<std::endl;
+    for ( size_t j = 0; j < img_in.size(); j++ )
+    {
+            vector< float > descriptors;
+            hog.compute( img_in[j], descriptors);
+            std::cout<<"KNN"<<std::endl;
+            cv::Mat resKnn;
+            g_knn->findNearest(descriptors,1,resKnn);
+            std::cout<<resKnn<<std::endl;
+    }
 
     return 0;
 }

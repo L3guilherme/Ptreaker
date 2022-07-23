@@ -65,32 +65,33 @@ void ReaderPscreen::Config(std::vector<cv::Rect>s_cut)
     naipes_ref.push_back(cv::imread("espadas.png",cv::IMREAD_GRAYSCALE));
     ordem_naipes.push_back('E');
 
-    cartas_ref.push_back(cv::imread("1_0.png",cv::IMREAD_GRAYSCALE));
-    ordem_cartas.push_back(1);
-    cartas_ref.push_back(cv::imread("2_0.png",cv::IMREAD_GRAYSCALE));
-    ordem_cartas.push_back(2);
-    cartas_ref.push_back(cv::imread("3_0.png",cv::IMREAD_GRAYSCALE));
-    ordem_cartas.push_back(3);
-    cartas_ref.push_back(cv::imread("4_0.png",cv::IMREAD_GRAYSCALE));
-    ordem_cartas.push_back(4);
-    cartas_ref.push_back(cv::imread("5_0.png",cv::IMREAD_GRAYSCALE));
-    ordem_cartas.push_back(5);
-    cartas_ref.push_back(cv::imread("6_0.png",cv::IMREAD_GRAYSCALE));
-    ordem_cartas.push_back(6);
-    cartas_ref.push_back(cv::imread("7_0.png",cv::IMREAD_GRAYSCALE));
-    ordem_cartas.push_back(7);
-    cartas_ref.push_back(cv::imread("8_0.png",cv::IMREAD_GRAYSCALE));
-    ordem_cartas.push_back(8);
-    cartas_ref.push_back(cv::imread("9_0.png",cv::IMREAD_GRAYSCALE));
-    ordem_cartas.push_back(9);
-    cartas_ref.push_back(cv::imread("10_0.png",cv::IMREAD_GRAYSCALE));
-    ordem_cartas.push_back(10);
-    cartas_ref.push_back(cv::imread("11_0.png",cv::IMREAD_GRAYSCALE));
-    ordem_cartas.push_back(11);
-    cartas_ref.push_back(cv::imread("12_0.png",cv::IMREAD_GRAYSCALE));
-    ordem_cartas.push_back(12);
-    cartas_ref.push_back(cv::imread("13_0.png",cv::IMREAD_GRAYSCALE));
-    ordem_cartas.push_back(13);
+    bool showImages = false;
+    for (int j = 1; j <= 13; j++) {
+        cv::String dirname = "treino/"+std::to_string(j)+"/imgs";
+        //std::cout << dirname << std::endl;
+        std::vector< cv::String > files;
+        cv::glob( dirname, files );
+        for ( size_t i = 0; i < files.size(); ++i )
+        {
+            std::cout << files[i] << std::endl;
+            cv::Mat img = cv::imread( files[i] ); // load the image
+
+
+            if ( img.empty() )
+            {
+                std::cout << files[i] << " is invalid!" << std::endl; // invalid image, skip it.
+                continue;
+            }
+            if ( showImages )
+            {
+                imshow( "image", img );
+                cv::waitKey(200);
+            }
+            ordem_cartas.push_back(j);
+            cartas_ref.push_back(img.clone());
+        }
+
+    }
 
     ref_DL = cv::imread("DL.png",cv::IMREAD_GRAYSCALE);
 
@@ -161,7 +162,7 @@ void *ReaderPscreen::CapLoop(void){
 
         lock_s_img.unlock();
         s_img = img;
-        usleep(10*1000);
+        usleep(30*1000);
 
     }
     std::cout<<"FIM Cap"<<std::endl;
@@ -210,7 +211,9 @@ cv::Mat ReaderPscreen::ImageFromDisplay(std::vector<uint8_t>& Pixels, int& Width
     return cv::Mat();
 }
 
-std::vector<carta> ReaderPscreen::Get_cartas_MT(cv::Mat img){
+
+int c_sv = 0;
+std::vector<carta> ReaderPscreen::Get_cartas_MT(cv::Mat img,int index){
 
     cv::Mat img_busca;
     cv::cvtColor(img,img_busca,cv::COLOR_BGR2GRAY);
@@ -251,20 +254,28 @@ std::vector<carta> ReaderPscreen::Get_cartas_MT(cv::Mat img){
 
 
     for (size_t i = 0; i < cartas.size(); i++){
-        cv::Mat ref = img_busca(cv::Rect(cartas[i].pos.x-4,cartas[i].pos.y-25,20,25));
-        cv::imshow("ref",ref);
+        cv::Rect rc_ref = cv::Rect(cartas[i].pos.x-2,cartas[i].pos.y-25,18,22);
+
+        //cv::imwrite("num_"+std::to_string(c_sv)+"_"+std::to_string(index)+"_"+std::to_string(i)+"_"+std::to_string(1)+".jpg",img(rc_ref));
+        //usleep(50*1000);
+        //std::cout<<"num_"+std::to_string(c_sv)+"_"+std::to_string(index)+"_"+std::to_string(i)+"_"+std::to_string(0)+".jpg"<<std::endl;
+
+        cv::Mat ref = img_busca(rc_ref);
 
         for (size_t j = 0; j < cartas_ref.size(); j++){
             cv::Mat resM2;
             cv::matchTemplate(ref,cartas_ref[j],resM2,cv::TM_SQDIFF_NORMED);//CV_TM_CCOEFF_NORMED CV_TM_SQDIFF_NORMED
             cv::Mat res_th;
-            cv::threshold(resM2,res_th,0.01,255.0,cv::THRESH_BINARY_INV);
+            cv::threshold(resM2,res_th,0.03,255.0,cv::THRESH_BINARY_INV);
             res_th.convertTo(res_th,CV_8UC1);
             if(cv::countNonZero(res_th)>=1){
                 cartas[i].num = ordem_cartas[j];
             }
         }
+        cv::rectangle(img,rc_ref,cv::Scalar(0,255,0));
     }
+    c_sv++;
+    std::cout<<c_sv<<std::endl;
     for (size_t i = 0; i < cartas.size(); i++){
         std::cout<<cartas[i].tipo<<" : "<<cartas[i].num<<" ; ";
     }
@@ -278,7 +289,7 @@ std::vector<carta> ReaderPscreen::Get_fl(cv::Mat img,cv::Rect ref,int index){
 
     cv::Mat img_toRead = img(ref);
 
-    std::vector<carta> res = Get_cartas_MT(img_toRead);
+    std::vector<carta> res = Get_cartas_MT(img_toRead,index);
 
     cv::imshow("floop "+std::to_string(index),img_toRead);
 
@@ -313,13 +324,17 @@ int ReaderPscreen::Find_DL(cv::Mat img){
     } customLess;
     std::sort(tmpJ.begin(), tmpJ.end(), customLess);
 
-    //cv::imshow("DL",img);
-
-    //std::cout<<"Delar: "<<std::endl;
-    //std::cout<<tmpJ[0].pos<<std::endl;
-
     jogadores[tmpJ[0].pos].eDealer = true;
 
     return tmpJ[0].pos;
 
+}
+
+void ReaderPscreen::TesteHOG(){
+
+    HOG_Detect teste;
+
+    teste.Load_Imgs_Label(cartas_ref,ordem_cartas);
+    teste.Train();
+    teste.Exec(cartas_ref);
 }
