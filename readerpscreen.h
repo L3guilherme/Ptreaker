@@ -50,6 +50,8 @@ public:
     std::vector<carta> Get_fl(cv::Mat img, cv::Rect ref, int index = 0);
     int Find_DL(cv::Mat img);
     void TesteHOG();
+    std::vector<cv::Mat>Get_jogadores(int index);
+    bool Jogando(cv::Mat img);
 
 private:
     static void* CallCap(void *arg){return ((ReaderPscreen*)arg)->CapLoop();}

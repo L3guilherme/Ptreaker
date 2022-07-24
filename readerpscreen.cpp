@@ -73,10 +73,7 @@ void ReaderPscreen::Config(std::vector<cv::Rect>s_cut)
         cv::glob( dirname, files );
         for ( size_t i = 0; i < files.size(); ++i )
         {
-            std::cout << files[i] << std::endl;
             cv::Mat img = cv::imread( files[i] ); // load the image
-
-
             if ( img.empty() )
             {
                 std::cout << files[i] << " is invalid!" << std::endl; // invalid image, skip it.
@@ -111,20 +108,20 @@ void ReaderPscreen::Config(std::vector<cv::Rect>s_cut)
         jogadores[i].pos = i;
     }
 
-    tam_jogador = cv::Size(104,52);
-    jogadores[0].centro = cv::Point(269+(int(tam_jogador.width/2)),233+(int(tam_jogador.height/2)));
-    jogadores[1].centro = cv::Point(70+(int(tam_jogador.width/2)),168+(int(tam_jogador.height/2)));
-    jogadores[2].centro = cv::Point(88+(int(tam_jogador.width/2)),88+(int(tam_jogador.height/2)));
-    jogadores[3].centro = cv::Point(269+(int(tam_jogador.width/2)),20+(int(tam_jogador.height/2)));
-    jogadores[4].centro = cv::Point(446+(int(tam_jogador.width/2)),55+(int(tam_jogador.height/2)));
-    jogadores[5].centro = cv::Point(464+(int(tam_jogador.width/2)),200+(int(tam_jogador.height/2)));
+    tam_jogador = cv::Size(106,55);
+    jogadores[0].centro = cv::Point(268+(int(tam_jogador.width/2)),233+(int(tam_jogador.height/2)));
+    jogadores[1].centro = cv::Point(70+(int(tam_jogador.width/2)),167+(int(tam_jogador.height/2)));
+    jogadores[2].centro = cv::Point(88+(int(tam_jogador.width/2)),55+(int(tam_jogador.height/2)));
+    jogadores[3].centro = cv::Point(268+(int(tam_jogador.width/2)),20+(int(tam_jogador.height/2)));
+    jogadores[4].centro = cv::Point(450+(int(tam_jogador.width/2)),55+(int(tam_jogador.height/2)));
+    jogadores[5].centro = cv::Point(464+(int(tam_jogador.width/2)),167+(int(tam_jogador.height/2)));
 
-    jogadores[0].ref = cv::Rect(269,233,tam_jogador.width,tam_jogador.height);
-    jogadores[1].ref = cv::Rect(70,168,tam_jogador.width,tam_jogador.height);
-    jogadores[2].ref = cv::Rect(88,88,tam_jogador.width,tam_jogador.height);
-    jogadores[3].ref = cv::Rect(269,20,tam_jogador.width,tam_jogador.height);
-    jogadores[4].ref = cv::Rect(446,55,tam_jogador.width,tam_jogador.height);
-    jogadores[5].ref = cv::Rect(464,200,tam_jogador.width,tam_jogador.height);
+    jogadores[0].ref = cv::Rect(268,233,tam_jogador.width,tam_jogador.height);
+    jogadores[1].ref = cv::Rect(70,167,tam_jogador.width,tam_jogador.height);
+    jogadores[2].ref = cv::Rect(88,55,tam_jogador.width,tam_jogador.height);
+    jogadores[3].ref = cv::Rect(268,20,tam_jogador.width,tam_jogador.height);
+    jogadores[4].ref = cv::Rect(450,55,tam_jogador.width,tam_jogador.height);
+    jogadores[5].ref = cv::Rect(464,167,tam_jogador.width,tam_jogador.height);
 
     std::cout<<"Config OK"<<std::endl;
 
@@ -168,6 +165,7 @@ void *ReaderPscreen::CapLoop(void){
         usleep(30*1000);
 
     }
+    usleep(30*1000);
     std::cout<<"FIM Cap"<<std::endl;
     return nullptr;
 }
@@ -271,12 +269,21 @@ std::vector<carta> ReaderPscreen::Get_cartas_MT(cv::Mat img,int index){
     }
 
 
-    for (size_t i = 0; i < cartas.size(); i++){
-        std::cout<<cartas[i].tipo<<" : "<<cartas[i].num<<" ; ";
-    }
-    std::cout<<std::endl;
+//    for (size_t i = 0; i < cartas.size(); i++){
+//        std::cout<<"|"<<cartas[i].tipo<<" : "<<cartas[i].num<<"|";
+//    }
+//    std::cout<<std::to_string(index)<<"|"<<std::endl;
 
     return cartas;
+
+}
+
+bool ReaderPscreen::Jogando(cv::Mat img){
+
+    cv::Mat img_barra = img(cv::Rect(10,img.rows-8,img.cols-30,4));
+    cv::imshow("bara",img_barra);
+
+    return false;
 
 }
 
@@ -286,7 +293,7 @@ std::vector<carta> ReaderPscreen::Get_fl(cv::Mat img,cv::Rect ref,int index){
 
     std::vector<carta> res = Get_cartas_MT(img_toRead,index);
 
-    cv::imshow("floop "+std::to_string(index),img_toRead);
+    //cv::imshow("floop "+std::to_string(index),img_toRead);
 
     return  res;
 
@@ -301,7 +308,7 @@ int ReaderPscreen::Find_DL(cv::Mat img){
     cv::Mat resM;
     cv::matchTemplate(img_busca,ref_DL,resM,cv::TM_SQDIFF_NORMED);
     cv::minMaxLoc( resM, &minVal, &maxVal, &minLoc, &maxLoc, cv::Mat() );
-    cv::rectangle( img, cv::Rect(minLoc.x,minLoc.y,ref_DL.cols,ref_DL.rows), cv::Scalar(255,0,255), 2, 8, 0 );
+    //cv::rectangle( img, cv::Rect(minLoc.x,minLoc.y,ref_DL.cols,ref_DL.rows), cv::Scalar(255,0,255), 2, 8, 0 );
 
     struct Jdist
     {
@@ -322,6 +329,18 @@ int ReaderPscreen::Find_DL(cv::Mat img){
     jogadores[tmpJ[0].pos].eDealer = true;
 
     return tmpJ[0].pos;
+
+}
+
+std::vector<cv::Mat> ReaderPscreen::Get_jogadores(int index){
+
+    std::vector<cv::Mat> saida;
+
+    for (size_t i = 0; i < jogadores.size(); i++) {
+        saida.push_back(res_img[index](jogadores[i].ref));
+    }
+
+    return saida;
 
 }
 
