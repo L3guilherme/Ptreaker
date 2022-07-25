@@ -208,22 +208,6 @@ void computeHOGs( const Size wsize, const vector< Mat > & img_lst, vector< Mat >
     hog.blockStride = cv::Size(4,4);
     hog.cellSize = cv::Size(2,2);
 
-
-    float resW = (hog.winSize.width-hog.blockSize.width) % hog.blockStride.width;
-    std::cout<<"winSize.width: "<<hog.winSize.width<<std::endl;
-    std::cout<<"blockSize.width: "<<hog.blockSize.width<<std::endl;
-    std::cout<<"blockStride.width: "<<hog.blockStride.width<<std::endl;
-    std::cout<<"res W: "<<resW<<std::endl;
-
-    float resY = (hog.winSize.height-hog.blockSize.height) % hog.blockStride.height;
-    std::cout<<"winSize.height: "<<hog.winSize.height<<std::endl;
-    std::cout<<"blockSize.height: "<<hog.blockSize.height<<std::endl;
-    std::cout<<"blockStride.height: "<<hog.blockStride.height<<std::endl;
-    std::cout<<"res Y: "<<resY<<std::endl;
-
-    std::cout<<"hog.cellSize.width: "<<hog.cellSize.width<<std::endl;
-    std::cout<<"hog.cellSize.height: "<<hog.cellSize.height<<std::endl;
-
     for( size_t i = 0 ; i < img_lst.size(); i++ )
     {
         if ( img_lst[i].cols >= wsize.width && img_lst[i].rows >= wsize.height )

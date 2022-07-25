@@ -93,6 +93,11 @@ void ReaderPscreen::Config(std::vector<cv::Rect>s_cut)
     hog_knn.Load_Imgs_Label(cartas_ref,ordem_cartas);
     hog_knn.Train();
 
+    jogadas.push_back(cv::imread("jogadas/aum.jpg"));
+    jogadas.push_back(cv::imread("jogadas/des.jpg"));
+    jogadas.push_back(cv::imread("jogadas/pag.jpg"));
+    jogadas.push_back(cv::imread("jogadas/apo.jpg"));
+
     ref_DL = cv::imread("DL.png",cv::IMREAD_GRAYSCALE);
 
     Jogador tmpJ;
@@ -151,19 +156,19 @@ void *ReaderPscreen::CapLoop(void){
     int Bpp = 0;
     std::vector<std::uint8_t> Pixels;
     while(cap){
-        lock_s_img.lock();
+
         cv::Mat img = ImageFromDisplay(Pixels, Width, Height, Bpp);//ImageFromDisplay(Pixels, Width, Height, Bpp);
+        lock_s_img.lock();
         if(s_cortes.size() > 0){
             res_img.clear();
             for (size_t i = 0; i < s_cortes.size() ; i++) {
                 res_img.push_back(img(s_cortes[i]));
             }
         }
-
-        lock_s_img.unlock();
         s_img = img;
-        usleep(30*1000);
+        lock_s_img.unlock();
 
+        usleep(35*1000);
     }
     usleep(30*1000);
     std::cout<<"FIM Cap"<<std::endl;
@@ -281,7 +286,14 @@ std::vector<carta> ReaderPscreen::Get_cartas_MT(cv::Mat img,int index){
 bool ReaderPscreen::Jogando(cv::Mat img){
 
     cv::Mat img_barra = img(cv::Rect(10,img.rows-8,img.cols-30,4));
-    cv::imshow("bara",img_barra);
+    cv::Mat barra_hsv;
+    cv::cvtColor(img_barra,barra_hsv,cv::COLOR_BGR2HSV);
+    cv::Mat hsv_th;
+    cv::inRange(barra_hsv,cv::Scalar(0,100,100),cv::Scalar(255,255,255),hsv_th);
+    //cv::imshow("bara",img_barra);
+    //cv::imshow("bara_th",hsv_th);
+
+    if(cv::countNonZero(hsv_th)> 10) return true;
 
     return false;
 

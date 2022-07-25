@@ -67,8 +67,7 @@ private:
     std::vector<Jogador> jogadores;
     cv::Size tam_jogador;
     HOG_Detect hog_knn;
-
-
+    std::vector<cv::Mat> jogadas;
 
 };
 
