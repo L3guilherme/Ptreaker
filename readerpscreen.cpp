@@ -93,17 +93,14 @@ void ReaderPscreen::Config(std::vector<cv::Rect>s_cut)
     hog_knn.Load_Imgs_Label(cartas_ref,ordem_cartas);
     hog_knn.Train();
 
-    jogadas.push_back(cv::imread("jogadas/aum.jpg"));
-    jogadas.push_back(cv::imread("jogadas/des.jpg"));
-    jogadas.push_back(cv::imread("jogadas/pag.jpg"));
-    jogadas.push_back(cv::imread("jogadas/apo.jpg"));
+    jogadas.push_back(cv::imread("jogadas/aum.png",cv::IMREAD_GRAYSCALE));
+    //jogadas.push_back(cv::imread("jogadas/des.jpg",cv::IMREAD_GRAYSCALE));
+    jogadas.push_back(cv::imread("jogadas/pag.png",cv::IMREAD_GRAYSCALE));
+    jogadas.push_back(cv::imread("jogadas/apo.png",cv::IMREAD_GRAYSCALE));
 
     ref_DL = cv::imread("DL.png",cv::IMREAD_GRAYSCALE);
 
     Jogador tmpJ;
-    tmpJ.eDealer = 0;
-    tmpJ.jogada = -1;
-    tmpJ.jogando = False;
     tmpJ.pos = -1;
     tmpJ.centro = cv::Point(0,0);
     tmpJ.ref = cv::Rect();
@@ -299,6 +296,52 @@ bool ReaderPscreen::Jogando(cv::Mat img){
 
 }
 
+bool ReaderPscreen::Tem_carta(cv::Mat img){
+
+    cv::Mat img_carta = img(cv::Rect(30,3,16,8));
+    cv::Mat carta_hsv;
+    cv::cvtColor(img_carta,carta_hsv,cv::COLOR_BGR2HSV);
+    cv::Mat hsv_th;
+    cv::inRange(carta_hsv,cv::Scalar(0,100,100),cv::Scalar(50,255,200),hsv_th);
+
+    //cv::imshow("carta",hsv_th);
+
+    //cv::rectangle(img,cv::Rect(30,3,16,8),cv::Scalar(0,255,0));
+
+    if(cv::countNonZero(hsv_th)> 10) return true;
+
+
+
+    return false;
+
+}
+
+int ReaderPscreen::Get_Jogada(cv::Mat img){
+
+    cv::Mat img_busca;
+    cv::cvtColor(img,img_busca,cv::COLOR_BGR2GRAY);
+
+    //cv::imshow("Joga MT",img_busca);
+    //cv::imshow("Jogada",jogadas[0]);
+
+    for (size_t i_jog = 0; i_jog < jogadas.size(); i_jog++) {
+
+        cv::Mat resM;
+        cv::matchTemplate(img_busca,jogadas[i_jog],resM,cv::TM_SQDIFF_NORMED);
+
+        cv::Mat res_th;
+        cv::threshold(resM,res_th,0.2,255.0,cv::THRESH_BINARY_INV);
+        res_th.convertTo(res_th,CV_8UC1);
+
+        cv::imshow("jog "+std::to_string(i_jog),res_th);
+
+        if(cv::countNonZero(res_th)>= 1) return i_jog;
+
+    }
+
+    return -1;
+}
+
 std::vector<carta> ReaderPscreen::Get_fl(cv::Mat img,cv::Rect ref,int index){
 
     cv::Mat img_toRead = img(ref);
@@ -319,7 +362,7 @@ int ReaderPscreen::Find_DL(cv::Mat img){
 
     cv::Mat resM;
     cv::matchTemplate(img_busca,ref_DL,resM,cv::TM_SQDIFF_NORMED);
-    cv::minMaxLoc( resM, &minVal, &maxVal, &minLoc, &maxLoc, cv::Mat() );
+    cv::minMaxLoc( resM, &minVal, &maxVal, &minLoc, &maxLoc, cv::Mat());
     //cv::rectangle( img, cv::Rect(minLoc.x,minLoc.y,ref_DL.cols,ref_DL.rows), cv::Scalar(255,0,255), 2, 8, 0 );
 
     struct Jdist
@@ -338,8 +381,6 @@ int ReaderPscreen::Find_DL(cv::Mat img){
     } customLess;
     std::sort(tmpJ.begin(), tmpJ.end(), customLess);
 
-    jogadores[tmpJ[0].pos].eDealer = true;
-
     return tmpJ[0].pos;
 
 }
@@ -354,6 +395,10 @@ std::vector<cv::Mat> ReaderPscreen::Get_jogadores(int index){
 
     return saida;
 
+}
+
+cv::Mat ReaderPscreen::Get_jogador(int mesa,int jogador){
+    return res_img[mesa](jogadores[jogador].ref);
 }
 
 void ReaderPscreen::TesteHOG(){

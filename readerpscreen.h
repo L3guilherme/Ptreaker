@@ -30,9 +30,6 @@ struct carta
 };
 
 struct Jogador{
-    int eDealer;
-    bool jogando;
-    int jogada;
     int pos;
     cv::Point centro;
     cv::Rect ref;
@@ -52,6 +49,9 @@ public:
     void TesteHOG();
     std::vector<cv::Mat>Get_jogadores(int index);
     bool Jogando(cv::Mat img);
+    bool Tem_carta(cv::Mat img);
+    cv::Mat Get_jogador(int mesa, int jogador);
+    int Get_Jogada(cv::Mat img);
 
 private:
     static void* CallCap(void *arg){return ((ReaderPscreen*)arg)->CapLoop();}
